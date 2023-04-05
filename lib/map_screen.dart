@@ -1,69 +1,87 @@
-import 'dart:ffi';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:mtpui/provider.dart';
-import 'package:mtpui/select_screen.dart';
 
 class MapScreen extends ConsumerWidget {
-  MapScreen({super.key, required this.coordlist});
-  List<LatLng> coordlist;
-  LatLng srcPoint = LatLng(0, 0);
-  LatLng desPoint = LatLng(0, 0);
-
-  String pointType = "src";
+  MapScreen({super.key});
+  String title = "Select Points";
+  // List<LatLng> coordlist;
 
   double pathStroke = 5.0;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final mapPoint = ref.watch(pointProvider);
+    final mapPoint = ref.watch(mapPointProvider);
+    final mapPath = ref.watch(pathProvider);
+    final buttonstate = ref.watch(buttonStateProvider);
     return Scaffold(
-      floatingActionButton: ButtonBar(
-        // alignment: MainAxisAlignment.spaceBetween,
+      floatingActionButton: (!buttonstate.start && !buttonstate.end)?ButtonBar(
         children: [
           ElevatedButton(
             child: const Icon(Icons.gps_fixed),
             onPressed: () {},
           ),
-          if (checkPoints(mapPoint))
+          if (checkPoints(mapPoint) && mapPath.coordinateList.isEmpty)
             ElevatedButton(
               child: const Icon(Icons.done),
               onPressed: () async {
                 List<double> bbox = getBBoxPoints(mapPoint.src, mapPoint.des);
-
                 await makePostRequest(bbox, mapPoint.src, mapPoint.des)
                     .then((value) {
                   List coordinateList = value;
-                  coordinateList.map((val) => LatLng(val[0], val[1])).toList();
+                  coordinateList = coordinateList
+                      .map((val) => LatLng(val[0], val[1]))
+                      .toList();
+
                   if (coordinateList.isNotEmpty) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => MapScreen(
-                          coordlist: coordinateList
-                              .map((val) => LatLng(val[0], val[1]))
-                              .toList(),
-                        ),
-                      ),
-                    );
+                    ref
+                        .read(pathProvider.notifier)
+                        .update(coordinateList: coordinateList as List<LatLng>);
+                    title = "Path Updated";
+                    // print("Path Updated");
                   } else {
-                    print("No path found");
+                    title = "No Path Found";
+                    // print("No path found");
                   }
-                  print(value.runtimeType);
                 });
               },
             ),
+          if (checkPoints(mapPoint))
+            ElevatedButton(
+              child: const Icon(Icons.delete_outline_sharp),
+              onPressed: () {
+                ref.read(pathProvider.notifier).reset();
+                ref.read(mapPointProvider.notifier).reset();
+                title = "Select Points";
+              },
+            ),
         ],
+      ):null,
+      appBar: AppBar(
+        title: Text(title),
       ),
-      appBar: AppBar(),
       body: Stack(
         children: [
           FlutterMap(
             options: MapOptions(
+              onTap: (tapPosition, point) {
+                if (buttonstate.start) {
+                  ref.read(mapPointProvider.notifier).update(src: point);
+                  ref.read(buttonStateProvider.notifier).update(start: false);
+                  title = "Select Points";
+                  // print("Source Point Update");
+                } else if(buttonstate.end) {
+                  ref.read(mapPointProvider.notifier).update(des: point);
+                  ref.read(buttonStateProvider.notifier).update(end: false);
+                  title = "Select Points";
+                  // print("Destination Point Update");
+                }
+              },
               rotation: 0,
-              center: coordlist[0],
+              center: (mapPath.coordinateList.isNotEmpty)
+                  ? mapPath.coordinateList[0]
+                  : MapData.center,
               minZoom: 12,
               zoom: 15,
               maxZoom: 22.0,
@@ -77,16 +95,16 @@ class MapScreen extends ConsumerWidget {
                 urlTemplate: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
                 userAgentPackageName: 'com.example.app',
               ),
-              if (coordlist.isNotEmpty)
+              if (mapPath.coordinateList.isNotEmpty)
                 PolylineLayer(
                   polylineCulling: false,
                   polylines: [
-                    if (coordlist.isNotEmpty)
+                    if (mapPath.coordinateList.isNotEmpty)
                       Polyline(
                         borderStrokeWidth: 4.0,
                         borderColor: Colors.black,
                         strokeWidth: pathStroke,
-                        points: coordlist,
+                        points: mapPath.coordinateList,
                         color: Colors.deepPurple,
                       ),
                   ],
@@ -123,30 +141,18 @@ class MapScreen extends ConsumerWidget {
                 ),
             ],
           ),
-          ButtonBar(
+          if(!buttonstate.start && !buttonstate.end)ButtonBar(
             children: [
               ElevatedButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SelectMapScreen(
-                          pointType: "src",
-                        ),
-                      ),
-                    );
+                    ref.read(buttonStateProvider.notifier).update(start: true);
+                    title = "Select Start Point";
                   },
                   child: const Text("Start")),
               ElevatedButton(
                   onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SelectMapScreen(
-                          pointType: "des",
-                        ),
-                      ),
-                    );
+                    ref.read(buttonStateProvider.notifier).update(end: true);
+                    title = "Select End Point";
                   },
                   child: const Text("End")),
             ],

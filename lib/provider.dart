@@ -1,23 +1,9 @@
-import 'dart:convert';
-import 'dart:ffi';
 import 'dart:math';
-
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart';
 import 'package:latlong2/latlong.dart';
-
-final leftProvider = Provider((ref) => TextEditingController());
-final bottomProvider = Provider((ref) => TextEditingController());
-final rightProvider = Provider((ref) => TextEditingController());
-final topProvider = Provider((ref) => TextEditingController());
-final srcLatProvider = Provider((ref) => TextEditingController());
-final srcLonProvider = Provider((ref) => TextEditingController());
-final desLatProvider = Provider((ref) => TextEditingController());
-final desLonProvider = Provider((ref) => TextEditingController());
-
-final srcLatLngProvider = Provider((ref) => LatLng(0, 0));
-final desLatLngProvider = Provider((ref) => LatLng(0, 0));
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 Future makePostRequest(List<double> bbox, LatLng src, LatLng dest) async {
   String urlPrefix = 'http://127.0.0.1:5000';
@@ -46,22 +32,6 @@ Future makePostRequest(List<double> bbox, LatLng src, LatLng dest) async {
   return [];
 }
 
-List<double> getBoundingBox(LatLng latLng1, LatLng latLng2) {
-  double left = latLng1.longitude <= latLng2.longitude
-      ? latLng1.longitude
-      : latLng2.longitude;
-  double right = latLng1.longitude > latLng2.longitude
-      ? latLng1.longitude
-      : latLng2.longitude;
-  double bottom = latLng1.latitude <= latLng2.latitude
-      ? latLng1.latitude
-      : latLng2.latitude;
-  double top =
-      latLng1.latitude > latLng2.latitude ? latLng1.latitude : latLng2.latitude;
-
-  return [left, bottom, right, top];
-}
-
 class Point {
   Point({required this.src, required this.des});
   LatLng src;
@@ -74,14 +44,18 @@ class Point {
 class PointNotifier extends StateNotifier<Point> {
   PointNotifier() : super(_initialValue);
   static final Point _initialValue =
-      Point(src: LatLng(0, 0), des: LatLng(0, 0));
+      Point(src: MapData.zero, des: MapData.zero);
 
   void update({LatLng? src, LatLng? des}) {
     state = state.copywith(src: src, des: des);
   }
+
+  void reset() {
+    state = state.copywith(src: MapData.zero, des: MapData.zero);
+  }
 }
 
-final pointProvider = StateNotifierProvider<PointNotifier, Point>((ref) {
+final mapPointProvider = StateNotifierProvider<PointNotifier, Point>((ref) {
   return PointNotifier();
 });
 
@@ -146,3 +120,69 @@ List<double> getBBoxPoints(LatLng latLng1, LatLng latLng2) {
   // Return the coordinates of the bounding box with buffer
   return [bufferLeft, bufferBottom, bufferRight, bufferTop];
 }
+
+List<double> getBoundingBox(LatLng latLng1, LatLng latLng2) {
+  double left = latLng1.longitude <= latLng2.longitude
+      ? latLng1.longitude
+      : latLng2.longitude;
+  double right = latLng1.longitude > latLng2.longitude
+      ? latLng1.longitude
+      : latLng2.longitude;
+  double bottom = latLng1.latitude <= latLng2.latitude
+      ? latLng1.latitude
+      : latLng2.latitude;
+  double top =
+      latLng1.latitude > latLng2.latitude ? latLng1.latitude : latLng2.latitude;
+
+  return [left, bottom, right, top];
+}
+
+class MapPath {
+  List<LatLng> coordinateList;
+  MapPath({required this.coordinateList});
+  MapPath copywith({List<LatLng>? coordinateList}) {
+    return MapPath(coordinateList: coordinateList ?? this.coordinateList);
+  }
+}
+
+class PathNotifier extends StateNotifier<MapPath> {
+  PathNotifier() : super(_initialValue);
+  static final MapPath _initialValue = MapPath(coordinateList: []);
+  void update({List<LatLng>? coordinateList}) {
+    state = state.copywith(coordinateList: coordinateList);
+  }
+
+  void reset() {
+    state = state.copywith(coordinateList: []);
+  }
+}
+
+final pathProvider = StateNotifierProvider<PathNotifier, MapPath>((ref) {
+  return PathNotifier();
+});
+
+class MapData {
+  static LatLng center = LatLng(31.780098, 76.992888);
+  static LatLng zero = LatLng(0, 0);
+}
+
+
+class SelectButtonState{
+  bool start;
+  bool end;
+  SelectButtonState({required this.start,required this.end});
+  SelectButtonState copywith({bool? start,bool? end}){
+    return SelectButtonState(start: start??this.start, end: end??this.end);
+  }
+}
+
+class ButtonStateNotifier extends StateNotifier<SelectButtonState>{
+  ButtonStateNotifier():super(_initialValue);
+  static final SelectButtonState _initialValue = SelectButtonState(start: false, end: false);
+
+  void update({bool? start,bool? end}){
+    state = state.copywith(start: start, end: end);
+  }
+}
+
+final buttonStateProvider = StateNotifierProvider<ButtonStateNotifier,SelectButtonState>((ref) => ButtonStateNotifier());
