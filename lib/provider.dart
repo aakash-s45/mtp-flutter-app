@@ -1,11 +1,13 @@
 import 'dart:math';
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-Future makePostRequest(List<double> bbox, LatLng src, LatLng dest) async {
+Future makePostRequest(List<double> bbox, LatLng src, LatLng dest,
+    {double slope = 30, double hWeight = 0.1}) async {
   String urlPrefix = 'http://127.0.0.1:5000';
   final url = Uri.parse('$urlPrefix/path');
   final headers = {"Content-type": "application/json"};
@@ -18,6 +20,8 @@ Future makePostRequest(List<double> bbox, LatLng src, LatLng dest) async {
     "src_lon": src.longitude,
     "des_lat": dest.latitude,
     "des_lon": dest.longitude,
+    "slope": slope,
+    "h_weight": hWeight
   };
 
   final json = jsonEncode(req);
@@ -166,23 +170,29 @@ class MapData {
   static LatLng zero = LatLng(0, 0);
 }
 
-
-class SelectButtonState{
+class SelectButtonState {
   bool start;
   bool end;
-  SelectButtonState({required this.start,required this.end});
-  SelectButtonState copywith({bool? start,bool? end}){
-    return SelectButtonState(start: start??this.start, end: end??this.end);
+  SelectButtonState({required this.start, required this.end});
+  SelectButtonState copywith({bool? start, bool? end}) {
+    return SelectButtonState(start: start ?? this.start, end: end ?? this.end);
   }
 }
 
-class ButtonStateNotifier extends StateNotifier<SelectButtonState>{
-  ButtonStateNotifier():super(_initialValue);
-  static final SelectButtonState _initialValue = SelectButtonState(start: false, end: false);
+class ButtonStateNotifier extends StateNotifier<SelectButtonState> {
+  ButtonStateNotifier() : super(_initialValue);
+  static final SelectButtonState _initialValue =
+      SelectButtonState(start: false, end: false);
 
-  void update({bool? start,bool? end}){
+  void update({bool? start, bool? end}) {
     state = state.copywith(start: start, end: end);
   }
 }
 
-final buttonStateProvider = StateNotifierProvider<ButtonStateNotifier,SelectButtonState>((ref) => ButtonStateNotifier());
+final buttonStateProvider =
+    StateNotifierProvider<ButtonStateNotifier, SelectButtonState>(
+        (ref) => ButtonStateNotifier());
+
+final slopeTextProvider = Provider((ref) => TextEditingController(text: "30"));
+final hWeightTextProvider =
+    Provider((ref) => TextEditingController(text: "0.1"));
