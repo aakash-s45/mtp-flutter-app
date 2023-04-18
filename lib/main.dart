@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mtpui/map_screen.dart';
 
-void main() async{
+void main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
