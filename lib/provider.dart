@@ -22,3 +22,7 @@ final hWeightTextProvider =
 
 final mapConfigProvider = StateNotifierProvider<MapConfigNotifier, MapConfig>(
     (ref) => MapConfigNotifier());
+
+final peaksProvider = StateNotifierProvider<PeaksNotifier, Peaks>((ref) {
+  return PeaksNotifier();
+});

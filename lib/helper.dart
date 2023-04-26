@@ -1,9 +1,12 @@
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:mtpui/models.dart';
 import 'package:mtpui/provider.dart';
+import 'package:mtpui/request.dart';
 
 bool checkPoints(var mapPoint) {
   return ((mapPoint.src.latitude != 0 && mapPoint.src.longitude != 0) &&
@@ -127,6 +130,99 @@ Future<void> getCurrentPosition(WidgetRef ref) async {
         .read(mapConfigProvider.notifier)
         .updateCurrLocation(currLocation: position);
   }).catchError((e) {
-    debugPrint(e);
+    debugPrint("Error");
+    // debugPrint(e);
+  });
+}
+
+Future<String?> showDialogBox(
+    BuildContext context, TextEditingController slopeController, String title) {
+  return showDialog<String>(
+    context: context,
+    builder: (BuildContext context) => AlertDialog(
+      title: Text(title),
+      content: TextField(
+        controller: slopeController,
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.pop(context, 'Cancel'),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context, 'OK');
+          },
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<String?> peakDialogBox(BuildContext context, Peak peak) {
+  return showDialog<String>(
+    context: context,
+    builder: (BuildContext context) => AlertDialog(
+      title: const Text('Info'),
+      content: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.15,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+                'Coordinates: ${peak.coord.latitude}, ${peak.coord.longitude}'),
+            // Text('Height: ${peak.height} ft'),
+            Text('Height: ${((peak.height) * 0.3048).round()} m'),
+            Text('Prominence: ${peak.prominence} m'),
+            // height in metres
+          ],
+        ),
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.pop(context, 'cancel'),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () async {
+            Navigator.pop(context, 'showPath');
+          },
+          child: const Text('Show Path'),
+        ),
+      ],
+    ),
+  );
+}
+
+Future<dynamic> getRoadFromAPI(
+    WidgetRef ref,
+    LatLng srcPoint,
+    TextEditingController slopeController,
+    TextEditingController weightController) async {
+  final mapConfigNotifier = ref.read(mapConfigProvider.notifier);
+
+  mapConfigNotifier.updateTitle(title: "Loading...");
+  await makePostRequestToRoad(srcPoint,
+          slope: double.parse(slopeController.text),
+          hWeight: double.parse(weightController.text))
+      .then((value) {
+    List coordinateList = value;
+    coordinateList =
+        coordinateList.map((val) => LatLng(val[0], val[1])).toList();
+    if (coordinateList.isNotEmpty) {
+      if (coordinateList.first == coordinateList.last) {
+        mapConfigNotifier.updateTitle(title: "Same Source and Destination");
+      } else {
+        ref
+            .read(pathProvider.notifier)
+            .update(coordinateList: coordinateList as List<LatLng>);
+        ref.read(mapPointProvider.notifier).update(des: coordinateList.first);
+        mapConfigNotifier.updateTitle(title: "Path Updated");
+      }
+    } else {
+      mapConfigNotifier.updateTitle(title: "No Path Found");
+    }
   });
 }

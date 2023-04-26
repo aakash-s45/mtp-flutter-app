@@ -33,6 +33,21 @@ class MapPath {
   }
 }
 
+class Peak {
+  Peak({required this.coord, required this.height, required this.prominence});
+  LatLng coord;
+  int height;
+  double prominence;
+}
+
+class Peaks {
+  List<Peak> peaks;
+  Peaks({required this.peaks});
+  Peaks copywith({List<Peak>? peaks}) {
+    return Peaks(peaks: peaks ?? this.peaks);
+  }
+}
+
 class SelectButtonState {
   bool start;
   bool end;
@@ -43,12 +58,25 @@ class SelectButtonState {
 }
 
 class MapConfig {
+  double rotation;
   Position currLocation;
   String title;
-  MapConfig({required this.currLocation, required this.title});
-  MapConfig copywith({Position? currLocation, String? title}) {
+  List<double> visibleBBox;
+  MapConfig(
+      {required this.currLocation,
+      required this.title,
+      required this.visibleBBox,
+      required this.rotation});
+  MapConfig copywith(
+      {Position? currLocation,
+      String? title,
+      List<double>? visibleBBox,
+      double? rotation}) {
     return MapConfig(
-        currLocation: currLocation ?? this.currLocation,
-        title: title ?? this.title);
+      currLocation: currLocation ?? this.currLocation,
+      title: title ?? this.title,
+      visibleBBox: visibleBBox ?? this.visibleBBox,
+      rotation: rotation ?? this.rotation,
+    );
   }
 }

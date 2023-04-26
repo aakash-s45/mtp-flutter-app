@@ -39,10 +39,28 @@ class PointNotifier extends StateNotifier<CheckPoint> {
   }
 }
 
+class PeaksNotifier extends StateNotifier<Peaks> {
+  PeaksNotifier() : super(_initialValue);
+  static final Peaks _initialValue = Peaks(peaks: []);
+
+  void update({List<Peak>? peaks}) {
+    state = state.copywith(peaks: peaks);
+  }
+
+  void reset() {
+    state = state.copywith(peaks: []);
+  }
+}
+
 class MapConfigNotifier extends StateNotifier<MapConfig> {
   MapConfigNotifier() : super(_initialValue);
-  static final MapConfig _initialValue =
-      MapConfig(currLocation: MapData.zeroPos, title: 'Select Points');
+
+  static final MapConfig _initialValue = MapConfig(
+    currLocation: MapData.zeroPos,
+    title: 'Select Points',
+    visibleBBox: [],
+    rotation: 0,
+  );
 
   void updateCurrLocation({Position? currLocation}) {
     state = state.copywith(currLocation: currLocation);
@@ -50,5 +68,13 @@ class MapConfigNotifier extends StateNotifier<MapConfig> {
 
   void updateTitle({String? title}) {
     state = state.copywith(title: title);
+  }
+
+  void updateVisibleBBox({List<double>? visibleBBox}) {
+    state = state.copywith(visibleBBox: visibleBBox);
+  }
+
+  void updateRotation({double? rotation}) {
+    state = state.copywith(rotation: rotation);
   }
 }
