@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +7,7 @@ import 'package:mtpui/helper.dart';
 import 'package:mtpui/models.dart';
 import 'package:mtpui/provider.dart';
 import 'package:mtpui/request.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MapScreen extends ConsumerStatefulWidget {
   MapScreen({super.key});
@@ -203,6 +205,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 }
               },
             ),
+            nonRotatedChildren: [
+              Align(
+                alignment: Alignment.bottomLeft,
+                child: Container(
+                    color: Colors.white,
+                    child: const Text("\u00a9 OpenStreetMap Contributors")),
+              ),
+            ],
             children: [
               TileLayer(
                 maxZoom: 22,
